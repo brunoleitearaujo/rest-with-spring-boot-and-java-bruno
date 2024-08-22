@@ -6,7 +6,9 @@ import java.util.logging.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import br.com.bruno.data.vo.v1.PersonVO;
 import br.com.bruno.exceptions.ResourceNotFoundException;
+import br.com.bruno.mapper.DozerMapper;
 import br.com.bruno.model.Person;
 import br.com.bruno.repositories.PersonRepository;
 
@@ -18,26 +20,30 @@ public class PersonServices {
 	@Autowired
 	PersonRepository repository;
 
-	public List<Person> findAll() {
+	public List<PersonVO> findAll() {
 		logger.info("Finding all Persons!");
 
-		return repository.findAll() ;
+		return DozerMapper.parseListObjects(repository.findAll(), PersonVO.class);
 	}
 
-	public Person findById(Long id) {
+	public PersonVO findById(Long id) {
 		logger.info("Finding one Person!");
 
-		return repository.findById(id)
+		var entity = repository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("No records found for this ID"));
+
+		return DozerMapper.parseObject(entity, PersonVO.class);
 	}
 
-	public Person create(Person person) {
+	public PersonVO create(PersonVO personVO) {
 		logger.info("Creating one Person!");
 
-		return repository.save(person);
+		var entity = DozerMapper.parseObject(personVO, Person.class);
+
+		return DozerMapper.parseObject(repository.save(entity), PersonVO.class);
 	}
 
-	public Person update(Person person) {
+	public PersonVO update(PersonVO person) {
 		logger.info("Updating one Person!");
 
 		var entity = repository.findById(person.getId())
@@ -48,7 +54,7 @@ public class PersonServices {
 		entity.setAddress(person.getAddress());
 		entity.setGender(person.getGender());
 
-		return repository.save(entity);
+		return DozerMapper.parseObject(repository.save(entity), PersonVO.class);
 	}
 
 	public void delete(Long id) {
