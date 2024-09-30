@@ -1,7 +1,10 @@
-package br.com.bruno.data.vo.v1.security;
+package br.com.bruno.integrationtests.vo;
 
 import java.io.Serializable;
 
+import jakarta.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
 public class AccountCredentialsVO implements Serializable {
 
 	private static final long serialVersionUID = 1L;
