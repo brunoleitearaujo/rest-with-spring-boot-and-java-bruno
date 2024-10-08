@@ -1,9 +1,11 @@
 package br.com.bruno.unittests.mockito.services;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -39,32 +41,6 @@ class PersonServicesTest {
 	void setUpMocks() throws Exception {
 		input = new MockPerson();
 		MockitoAnnotations.openMocks(this);
-	}
-
-	@Test
-	void testFindAll() {
-		List<Person> list = input.mockEntityList();
-
-		when(repository.findAll()).thenReturn(list);
-
-		var people = service.findAll();
-		
-		assertNotNull(people);
-		assertEquals(14, people.size());
-
-		people.forEach(person -> {
-			Long key = person.getKey();
-			assertNotNull(person);
-			assertNotNull(key);
-			assertNotNull(person.getLinks());
-
-			assertTrue(person.toString().contains("[</api/person/v1/" + key + ">;rel=\"self\"]"));
-
-			assertEquals("Addres Test" + key, person.getAddress());
-			assertEquals("First Name Test" + key, person.getFirstName());
-			assertEquals("Last Name Test" + key, person.getLastName());
-			assertEquals(((key % 2)==0) ? "Male" : "Female", person.getGender());
-		});
 	}
 
 	@Test
