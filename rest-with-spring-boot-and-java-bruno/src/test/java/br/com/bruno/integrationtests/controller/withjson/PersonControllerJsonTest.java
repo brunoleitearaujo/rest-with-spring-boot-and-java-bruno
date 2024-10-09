@@ -1,12 +1,10 @@
 package br.com.bruno.integrationtests.controller.withjson;
 
 import static io.restassured.RestAssured.given;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -16,7 +14,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,6 +23,7 @@ import br.com.bruno.integrationtests.testcontainers.AbstractIntegrationTest;
 import br.com.bruno.integrationtests.vo.AccountCredentialsVO;
 import br.com.bruno.integrationtests.vo.PersonVO;
 import br.com.bruno.integrationtests.vo.TokenVO;
+import br.com.bruno.integrationtests.vo.wrappers.WrapperPersonVO;
 import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.filter.log.LogDetail;
 import io.restassured.filter.log.RequestLoggingFilter;
@@ -236,6 +234,7 @@ public class PersonControllerJsonTest extends AbstractIntegrationTest {
 	public void testFindAll() throws JsonMappingException, JsonProcessingException {
 		var content = given().spec(specification)
 				.contentType(TestConfigs.CONTENT_TYPE_JSON)
+				.queryParams("page", 3, "size", 10, "direction", "asc")
 					.when()
 					.get()
 				.then()
@@ -244,7 +243,8 @@ public class PersonControllerJsonTest extends AbstractIntegrationTest {
 					.body()
 						.asString();
 
-		List<PersonVO> people = objectMapper.readValue(content, new TypeReference<List<PersonVO>>() {});
+		WrapperPersonVO wrapper = objectMapper.readValue(content, WrapperPersonVO.class);
+		var people = wrapper.getEmbedded().getPersons();
 
 		PersonVO personOne = people.get(0);
 
@@ -255,11 +255,11 @@ public class PersonControllerJsonTest extends AbstractIntegrationTest {
 		assertNotNull(personOne.getGender());
 		assertTrue(personOne.getEnabled());
 
-		assertEquals(1, personOne.getId());
+		assertEquals(673, personOne.getId());
 
-		assertEquals("Ayrton", personOne.getFirstName());
-		assertEquals("Senna", personOne.getLastName());
-		assertEquals("São Paulo", personOne.getAddress());
+		assertEquals("Alic", personOne.getFirstName());
+		assertEquals("Terbrug", personOne.getLastName());
+		assertEquals("3 Eagle Crest Court", personOne.getAddress());
 		assertEquals("Male", personOne.getGender());
 
 		PersonVO personTwo = people.get(1);
@@ -269,14 +269,14 @@ public class PersonControllerJsonTest extends AbstractIntegrationTest {
 		assertNotNull(personTwo.getLastName());
 		assertNotNull(personTwo.getAddress());
 		assertNotNull(personTwo.getGender());
-		assertTrue(personTwo.getEnabled());
+		assertFalse(personTwo.getEnabled());
 
-		assertEquals(2, personTwo.getId());
+		assertEquals(410, personTwo.getId());
 
-		assertEquals("Bruno", personTwo.getFirstName());
-		assertEquals("Araújo", personTwo.getLastName());
-		assertEquals("Fortaleza", personTwo.getAddress());
-		assertEquals("Male", personTwo.getGender());
+		assertEquals("Alie", personTwo.getFirstName());
+		assertEquals("Yeld", personTwo.getLastName());
+		assertEquals("42 Messerschmidt Crossing", personTwo.getAddress());
+		assertEquals("Female", personTwo.getGender());
 	}
 
 	@Test
@@ -295,6 +295,68 @@ public class PersonControllerJsonTest extends AbstractIntegrationTest {
 				.get()
 			.then()
 				.statusCode(403);
+	}
+
+	@Test
+	@Order(8)
+	public void testFindPersonByName() throws JsonMappingException, JsonProcessingException {
+		var content = given().spec(specification)
+				.contentType(TestConfigs.CONTENT_TYPE_JSON)
+				.pathParam("firstName", "ayr")
+				.queryParams("page", 0, "size", 6, "direction", "asc")
+					.when()
+					.get("findPersonByName/{firstName}")
+				.then()
+					.statusCode(200)
+				.extract()
+					.body()
+						.asString();
+
+		WrapperPersonVO wrapper = objectMapper.readValue(content, WrapperPersonVO.class);
+		var people = wrapper.getEmbedded().getPersons();
+
+		PersonVO personOne = people.get(0);
+
+		assertNotNull(personOne.getId());
+		assertNotNull(personOne.getFirstName());
+		assertNotNull(personOne.getLastName());
+		assertNotNull(personOne.getAddress());
+		assertNotNull(personOne.getGender());
+		assertTrue(personOne.getEnabled());
+
+		assertEquals(1, personOne.getId());
+
+		assertEquals("Ayrton", personOne.getFirstName());
+		assertEquals("Senna", personOne.getLastName());
+		assertEquals("São Paulo", personOne.getAddress());
+		assertEquals("Male", personOne.getGender());
+	}
+
+	@Test
+	@Order(9)
+	public void testHATEOAS() throws JsonMappingException, JsonProcessingException {
+		var content = given().spec(specification)
+				.contentType(TestConfigs.CONTENT_TYPE_JSON)
+				.queryParams("page", 3, "size", 10, "direction", "asc")
+					.when()
+					.get()
+				.then()
+					.statusCode(200)
+				.extract()
+					.body()
+						.asString();
+
+		assertTrue(content.contains("\"_links\":{\"self\":{\"href\":\"http://localhost:8888/api/person/v1/673\"}}}"));
+		assertTrue(content.contains("\"_links\":{\"self\":{\"href\":\"http://localhost:8888/api/person/v1/710\"}}}"));
+		assertTrue(content.contains("\"_links\":{\"self\":{\"href\":\"http://localhost:8888/api/person/v1/195\"}}}"));
+
+		assertTrue(content.contains("\"first\":{\"href\":\"http://localhost:8888/api/person/v1?direction=asc&page=0&size=10&sort=firstName,asc\"}"));
+		assertTrue(content.contains("\"prev\":{\"href\":\"http://localhost:8888/api/person/v1?direction=asc&page=2&size=10&sort=firstName,asc\"}"));
+		assertTrue(content.contains("\"self\":{\"href\":\"http://localhost:8888/api/person/v1?page=3&size=10&direction=asc\"}"));
+		assertTrue(content.contains("\"next\":{\"href\":\"http://localhost:8888/api/person/v1?direction=asc&page=4&size=10&sort=firstName,asc\"}"));
+		assertTrue(content.contains("\"last\":{\"href\":\"http://localhost:8888/api/person/v1?direction=asc&page=100&size=10&sort=firstName,asc\"}"));
+		
+		assertTrue(content.contains("\"page\":{\"size\":10,\"totalElements\":1004,\"totalPages\":101,\"number\":3}"));
 	}
 
 	private void mockPerson() {
