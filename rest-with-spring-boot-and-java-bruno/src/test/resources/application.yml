@@ -2,8 +2,8 @@ server:
   port: 8888
 cors:
   originPatterns: http://localhost:3000,http://localhost:8080,https://bruno.com.br
-  file:
-    upload-dir: /Users/barau/Documents/UploadDir
+file:
+    upload-dir: /home/runner/work/rest-with-spring-boot-and-java-bruno/UploadDir
 security:
   jwt:
     token:
